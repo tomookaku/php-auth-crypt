@@ -1,15 +1,6 @@
-php-auth-crypt
-==============
-
-スマホアプリとセキュアに通信するための認証・暗号化モジュール
-
-ファイル
----------
-* user.sql -- MySQL ユーザ管理テーブル
-* auth.php -- 認証・暗号化モジュール
-
-テーブルの構造 `user`
----------
+--
+-- テーブルの構造 `user`
+--
 
 CREATE TABLE IF NOT EXISTS `user` (
   `id` bigint(16) unsigned NOT NULL AUTO_INCREMENT,
@@ -22,4 +13,3 @@ CREATE TABLE IF NOT EXISTS `user` (
   UNIQUE KEY `uuid` (`uuid`),
   UNIQUE KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='ユーザテーブル' AUTO_INCREMENT=1 ;
-
