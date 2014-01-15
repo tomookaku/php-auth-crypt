@@ -25,7 +25,7 @@ class Auth
      * @var user when login succeeded
      */
     private $user = null;
-    
+
     /**
      * Check for login
      *
@@ -35,21 +35,21 @@ class Auth
     {
         // session start
         session_start();
-        
+
         // fetch the uuid, user_id and login time from the session
         $uuid 	 = $_SESSION['uuid'];
         $user_id = $_SESSION['user_id'];
         $key	 = $_SESSION['key'];
         $time	 = $_SESSION['time'];
-        
+
         // only worth checking.
         if (!empty($uuid) and !empty($user_id) and ! empty($key) and ! empty($time)) {
             return true;
         }
-        
+
         return $this->force_login($uuid);
     }
-    
+
     /**
      * Check the user exists
      *
@@ -59,42 +59,42 @@ class Auth
     public function validate_user($b = '')
     {
         $b = trim($b) ?: trim($_REQUEST['b']);
-        
+
         if (empty($b))
         {
             return false;
         }
-        
+
         // Read Private Key (xxx.pem)
         $fp = fopen(PRIVATE_PEM, "r");
         $priv_key = fread($fp, 8192);
         fclose($fp);
-        
+
         $res = openssl_get_privatekey($priv_key, PASSPHASE1);
         $data = "";
         openssl_private_decrypt(base64_decode($b), $data, $res, OPENSSL_PKCS1_PADDING);
-        
+
         $b = $data;
-        
+
         // $data = {"uuid":"<UUID>", "key":"<Common Key>", "time":"<UNIXTIME>"}
         $jsondata = json_decode($b, true);
-        
+
         $uuid = $jsondata['uuid'];
         $key = (isset($jsondata['key'])) ? $jsondata['key'] : ''; // Get Common Key
         $time = $jsondata['time'];
-        
+
         $user = $this->select_user($uuid);
-        
+
         if (!$user) {
             $user = array('uuid' => $uuid);
         }
-        
+
         $user['key'] = $key;
         $user['time'] = $time;
-        
+
         return $user;
     }
-    
+
     /**
      * login user
      *
@@ -113,12 +113,12 @@ class Auth
             $_SESSION = array();
             return false;
         }
-        
+
         if (empty($this->user['user_id']) || !$this->user['user_id']) {
             // new user >> create user
             $this->user['user_id'] = $this->create_user($this->user);
         }
-        
+
         if (!$this->user['user_id']) {
             unset($_SESSION['user_id']);
             unset($_SESSION['uuid']);
@@ -127,18 +127,18 @@ class Auth
             $_SESSION = array();
             return false;
         }
-        
+
         // register so Auth::logout() can find us
         Auth::_register_verified($this);
-        
+
         $_SESSION['user_id']  = $this->user['user_id'];
         $_SESSION['uuid']	 = $this->user['uuid'];
         $_SESSION['key']	  = $this->user['key'];
         $_SESSION['time']	 = $this->user['time'];
-        
+
         return true;
     }
-    
+
     /**
      * Force login user
      *
@@ -151,9 +151,9 @@ class Auth
         {
             return false;
         }
-        
+
         $this->user = $this->select_user($uuid);
-        
+
         if ($this->user == false)
         {
             unset($_SESSION['user_id']);
@@ -163,15 +163,15 @@ class Auth
             $_SESSION = array();
             return false;
         }
-        
+
         $_SESSION['user_id'] = $this->user['user_id'];
         $_SESSION['uuid']    = $this->user['uuid'];
         $_SESSION['key']     = $this->user['key'];
         $_SESSION['time']    = $this->user['time'];
-        
+
         return true;
     }
-    
+
     /**
      * Logout user
      *
@@ -186,7 +186,7 @@ class Auth
         $_SESSION = array();
         return true;
     }
-    
+
     /**
      * Create new user
      *
@@ -199,19 +199,19 @@ class Auth
         {
             return false;
         }
-        
+
         $id = $this->insert_user($user);
-        
+
         if (!$id)
         {
             return false;
         }
-        
+
         $user_id = $this->make_user_id($id);
 
         return $user_id;
     }
-    
+
     /**
      * Get the device ID
      *
@@ -223,10 +223,10 @@ class Auth
         {
             return false;
         }
-        
+
         return $this->user['uuid'];
     }
-    
+
     /**
      * Get the user's ID
      *
@@ -238,10 +238,10 @@ class Auth
         {
             return false;
         }
-        
+
         return $this->user['user_id'];
     }
-    
+
     /**
      * Get the login time
      *
@@ -253,7 +253,7 @@ class Auth
         {
             return false;
         }
-        
+
         return $this->user['time'];
     }
 
@@ -268,10 +268,10 @@ class Auth
         {
             return false;
         }
-        
+
         return $this->user['key'];
     }
-    
+
     /**
      * Check the request
      *
@@ -283,41 +283,41 @@ class Auth
     {
         $a = trim($a) ?: trim($_REQUEST['a']);
         $b = trim($b) ?: trim($_REQUEST['b']);
-        
+
         if (empty($a) || empty($b))
         {
             return false;
         }
-        
+
         $sercret_key = $_SESSION['key'];
-        
+
         $data = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, md5($sercret_key), base64_decode($a), MCRYPT_MODE_CBC, str_repeat("\0", 16));
         $padding = ord($data[strlen($data) - 1]);
         $a = substr($data, 0, -$padding);
-        
+
         $uuid = $_SESSION['uuid'];
-        
+
         $salt = $sercret_key . $a . $uuid;
-        
+
         $data = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, md5($salt), base64_decode($b), MCRYPT_MODE_CBC, str_repeat("\0", 16));
         $padding = ord($data[strlen($data) - 1]);
         $b = substr($data, 0, -$padding);
-        
+
         $jsondata = json_decode($b, true);
-        
+
         $time = $jsondata['time'];
-        
+
         $jsondata['user_id'] = $_SESSION['user_id'];
         $jsondata['uuid']    = $_SESSION['uuid'];
         $jsondata['time']    = strval($time);
-        
+
         return $jsondata;
     }
-    
+
     /**
      * Make User's ID
      *
-     * @param   number $id 
+     * @param   number $id
      * @return  Array user's Info.
      */
     private function make_user_id($id)
@@ -326,17 +326,17 @@ class Auth
         {
             return false;
         }
-        
+
         $last_login = time();
         $user_id = sha1($id.$last_login);
-        
+
         $this->user['user_id'] = $user_id;
 
         $this->update_user($this->user);
-        
+
         return $this->user;
     }
-    
+
     /**
      * Make Crypt Response
      *
@@ -348,32 +348,32 @@ class Auth
     {
         $a = strval($time);
         $b = $data;
-        
+
         $jsondata = json_encode($data);
-        
+
         $sercret_key = $_SESSION['key'];
-        
+
         $uuid = $_SESSION['uuid'];
-        
+
         $salt = md5($sercret_key . $a . $uuid);
-        
+
         $padding = 16 - (strlen($a) % 16);
         $a .= str_repeat(chr($padding), $padding);
-        
+
         $a = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $salt, $a, MCRYPT_MODE_CBC, str_repeat("\0", 16));
-        
+
         $a = base64_encode($a);
-        
+
         $padding = 16 - (strlen($jsondata) % 16);
         $jsondata .= str_repeat(chr($padding), $padding);
-        
+
         $jsondata = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $salt2, $jsondata, MCRYPT_MODE_CBC, str_repeat("\0", 16));
-        
+
         $b = base64_encode($jsondata);
-        
+
         return array('a' => $a, 'b' => $b);
     }
-    
+
     /**
      * select_user function.
      *
@@ -387,7 +387,7 @@ class Auth
         if (mysqli_connect_errno()) {
             return false;
         }
-        
+
         if ($result = $mysqli->query("SELECT * FROM `user` WHERE `uuid` = '".$uuid."'")) {
             if ($row = mysqli_fetch_array($result)) {
                 $user = array(
@@ -398,21 +398,21 @@ class Auth
                     'up_date'    => $row['up_date']
                 );
             }
-            
+
             $result->close();
         }
-        
+
         $mysqli->close();
-        
+
         return $user;
     }
-    
+
     /**
      * insert_user function.
      *
      * @access private
      * @param Array $user
-     * @return int ID 
+     * @return int ID
      */
     private function insert_user($user)
     {
@@ -420,8 +420,8 @@ class Auth
         if (mysqli_connect_errno()) {
             return false;
         }
-        
-        $result = $mysqli->query("INSERT INTO `user` (`uuid`, `time`, `user_id`) VALUES ('".$user['time']."', '".$user['user_id']."')");
+
+        $result = $mysqli->query("INSERT INTO `user` (`uuid`, `time`, `reg_date`) VALUES ('".$user['time']."', '".date("Y-m-d H:i:s")."')");
 
         $id = false;
 
@@ -435,16 +435,16 @@ class Auth
         }
 
         $mysqli->close();
-        
+
         return $id;
     }
-    
+
     /**
      * update_user function.
      *
      * @access private
      * @param Array $user
-     * @return bool 
+     * @return bool
      */
     private function update_user($user)
     {
@@ -452,14 +452,14 @@ class Auth
         if (mysqli_connect_errno()) {
             return false;
         }
-        
+
         $result = $mysqli->query("UPDATE `user` SET `time` = '".$user['time']."', `user_id` = '".$user['user_id']."'");
 
         $mysqli->close();
-        
+
         return $result;
     }
-    
+
     /**
      * delete_user function.
      *
@@ -473,16 +473,16 @@ class Auth
         {
             return false;
         }
-        
+
         $mysqli = new mysqli("localhost", "root", "password", "auth_db");
         if (mysqli_connect_errno()) {
             return false;
         }
-        
+
         $result = $mysqli->query("DELETE FROM `user` WHERE `user_id` = ".$user_id);
 
         $mysqli->close();
-        
+
         return $relust;
     }
 }
