@@ -421,7 +421,7 @@ class Auth
             return false;
         }
 
-        $result = $mysqli->query("INSERT INTO `user` (`uuid`, `time`, `reg_date`) VALUES ('"$user['uuid']."', ".$user['time']."', '".date("Y-m-d H:i:s")."')");
+        $result = $mysqli->query("INSERT INTO `user` (`uuid`, `time`, `reg_date`) VALUES ('".$user['uuid']."', ".$user['time']."', '".date("Y-m-d H:i:s")."')");
 
         $id = false;
 
