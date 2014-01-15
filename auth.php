@@ -421,7 +421,7 @@ class Auth
             return false;
         }
 
-        $result = $mysqli->query("INSERT INTO `user` (`uuid`, `time`, `reg_date`) VALUES ('".$user['time']."', '".date("Y-m-d H:i:s")."')");
+        $result = $mysqli->query("INSERT INTO `user` (`uuid`, `time`, `reg_date`) VALUES ('"$user['uuid']."', ".$user['time']."', '".date("Y-m-d H:i:s")."')");
 
         $id = false;
 
@@ -453,7 +453,7 @@ class Auth
             return false;
         }
 
-        $result = $mysqli->query("UPDATE `user` SET `time` = '".$user['time']."', `user_id` = '".$user['user_id']."'");
+        $result = $mysqli->query("UPDATE `user` SET `time`='".$user['time']."', `user_id`='".$user['user_id']."'");
 
         $mysqli->close();
 
@@ -479,7 +479,7 @@ class Auth
             return false;
         }
 
-        $result = $mysqli->query("DELETE FROM `user` WHERE `user_id` = ".$user_id);
+        $result = $mysqli->query("DELETE FROM `user` WHERE `user_id` = '".$user_id."'");
 
         $mysqli->close();
 
